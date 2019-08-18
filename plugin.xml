@@ -1,0 +1,10 @@
+<library path="lib/libfranka_interface">
+    <class  name="franka_interface/VelocityInterface"
+            type="franka_interface::VelocityInterface"
+            base_class_type="controller_interface::ControllerBase">
+    <description>
+        A controller that executes a short motion based on joint velocities
+        to demonstrate correct usage
+    </description>
+    </class>
+</library>

@@ -1,0 +1,10 @@
+package exlcm;
+
+struct env_state
+{
+    int64_t  timestamp;
+    float   joint_position[7];
+    float   joint_velocity[4];
+    float   object_position[3];
+    float   object_orientation[4];
+}
