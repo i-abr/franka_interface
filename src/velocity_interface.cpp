@@ -19,15 +19,16 @@ namespace franka_interface {
 
 
     class VelocityInterface : public controller_interface::MultiInterfaceController<
-                                        hardware_interface::VelocityJointInterface,
-                                        franka_hw::FrankaStateInterface>
+                                hardware_interface::VelocityJointInterface, franka_hw::FrankaStateInterface>
     {
     private:
-        
+
         hardware_interface::VelocityJointInterface* velocity_joint_interface_;
         std::vector<hardware_interface::JointHandle> velocity_joint_handles_;
-        ros::Subscriber  vel_cmd_sub;
-        ros::Duration elapsed_time_;
+        ros::Subscriber     vel_cmd_sub;
+        ros::Duration       elapsed_time_;
+        bool                read_message = false;
+        float               decay_rate   = 0.8;
 
         // initialize to 0 so the robot doesn't do crazy things when starting
 
@@ -101,25 +102,30 @@ namespace franka_interface {
 
         void update(const ros::Time&, const ros::Duration& period) {
 
-
-            for ( size_t i = 0 ; i < 7; i ++) {
-                filtered_cmd[i] = alpha * filtered_cmd[i] + (1.0-alpha) * vel_cmd[i];
-                velocity_joint_handles_[i].setCommand(filtered_cmd[i]);
+            // check to see if there were any messages recieved
+            if (read_message == true) {
+                // resetting the duration if there was a message
+                elapsed_time_ = ros::Duration(0.);
+                read_message = false;
+            }
+            else {
+                // updating if there wasn't, there could be something wrong
+                elapsed_time_ += period;
             }
 
-            elapsed_time_ += period;
+            if (elapsed_time_.toSec() > 0.2) { // not sure if I want to look at 0.1 s instead....
+                for (size_t i = 0; i < 7; i++) {
+                    filtered_cmd[i] = decay_rate * filtered_cmd[i]; // slow the robot
+                    velocity_joint_handles_[i].setCommand(filtered_cmd[i]);
+                }
+            }
+            else {
+                for ( size_t i = 0 ; i < 7; i ++) {
+                    filtered_cmd[i] = alpha * filtered_cmd[i] + (1.0-alpha) * vel_cmd[i];
+                    velocity_joint_handles_[i].setCommand(filtered_cmd[i]);
+                }
+            }
 
-            // ros::Duration time_max(8.0);
-            // double omega_max = 0.1;
-            // double cycle = std::floor(
-            //     std::pow(-1.0, (elapsed_time_.toSec() - std::fmod(elapsed_time_.toSec(), time_max.toSec())) /
-            //                        time_max.toSec()));
-            // double omega = cycle * omega_max / 2.0 *
-            //                (1.0 - std::cos(2.0 * M_PI / time_max.toSec() * elapsed_time_.toSec()));
-            //
-            // for (auto joint_handle : velocity_joint_handles_) {
-            //   joint_handle.setCommand(omega);
-            // }
         }
 
         void starting(const ros::Time&) {
@@ -134,9 +140,11 @@ namespace franka_interface {
 
         void cmd_callback(const sensor_msgs::JointState::ConstPtr& msgs) {
             // pull in the current command
+            // TODO: update this once debugging is complete
             for (size_t i=0; i<7; i++) {
                 vel_cmd[i] = msgs->velocity[i];
             }
+            read_message = true;
         }
 
     };
