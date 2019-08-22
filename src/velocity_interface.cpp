@@ -39,6 +39,23 @@ namespace franka_interface {
     public:
         bool init(hardware_interface::RobotHW* robot_hardware, ros::NodeHandle& node_handle) {
 
+            /*
+             * TODO: see if I actually need this to be in the velocity interface cpp file
+            ros::ServiceClient client = node_handle.serviceClient<
+                        franka_ros::SetForceTorqueCollision
+            >("/franka_control/set_full_collision_behavior");
+
+            franka_ros::SetForceTorqueCollision srv;
+            srv.request.lower_torque_thresholds_acceleration;
+            srv.request.upper_torque_thresholds_acceleration;
+            srv.request.lower_torque_thresholds_nominal;
+            srv.request.upper_torque_thresholds_nominal;
+            srv.request.lower_force_thresholds_acceleration;
+            srv.request.upper_force_thresholds_acceleration;
+            srv.request.lower_force_thresholds_nominal;
+            srv.request.upper_force_thresholds_nominal;
+            */
+
             vel_cmd_sub = node_handle.subscribe("/jnt_cmd", 1, &VelocityInterface::cmd_callback, this);
             // Get the velocity HW interface
             velocity_joint_interface_ = robot_hardware->get<hardware_interface::VelocityJointInterface>();
@@ -77,24 +94,25 @@ namespace franka_interface {
                 return false;
             }
 
-            try {
-                auto state_handle = state_interface->getHandle("panda_robot");
-
-                std::array<double, 7> q_start{{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
-                for (size_t i = 0; i < q_start.size(); i++) {
-                  if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
-                    ROS_ERROR_STREAM(
-                        "JointVelocityExampleController: Robot is not in the expected starting position for "
-                        "running this example. Run `roslaunch franka_example_controllers move_to_start.launch "
-                        "robot_ip:=<robot-ip> load_gripper:=<has-attached-gripper>` first.");
-                    return false;
-                  }
-                }
-            } catch (const hardware_interface::HardwareInterfaceException& e) {
-                ROS_ERROR_STREAM(
-                    "JointVelocityExampleController: Exception getting state handle: " << e.what());
-                    return false;
-            }
+            // I am removing this because starting the robot every time at a new place is ridiculous
+            // try {
+            //     auto state_handle = state_interface->getHandle("panda_robot");
+            //
+            //     std::array<double, 7> q_start{{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
+            //     for (size_t i = 0; i < q_start.size(); i++) {
+            //       if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
+            //         ROS_ERROR_STREAM(
+            //             "JointVelocityExampleController: Robot is not in the expected starting position for "
+            //             "running this example. Run `roslaunch franka_example_controllers move_to_start.launch "
+            //             "robot_ip:=<robot-ip> load_gripper:=<has-attached-gripper>` first.");
+            //         return false;
+            //       }
+            //     }
+            // } catch (const hardware_interface::HardwareInterfaceException& e) {
+            //     ROS_ERROR_STREAM(
+            //         "JointVelocityExampleController: Exception getting state handle: " << e.what());
+            //         return false;
+            // }
 
             return true;
 
