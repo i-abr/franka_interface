@@ -1,0 +1,76 @@
+<mujocoinclude>
+
+    <!-- <option iterations='20' noslip_iterations='20'/> -->
+    <!--<size njmax="500" nconmax="100" nstack="600000" nuser_body="9" nuser_jnt="1" nuser_site="1" -->
+    <!--    nuser_tendon="1" nuser_actuator="16" nuser_sensor="1" /> -->
+    <!-- <size njmax="500" nconmax="100" nstack="600000" /> -->
+    <default>
+        <default class='visual'>
+            <geom type='mesh' euler='1.57079 0.0 0.0'/>
+        </default>
+    </default>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" width="128" height="128" rgb1=".4 .6 .8"
+            rgb2="0 0 0"/>
+        <!-- <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0.1 0.9 0.9" type="skybox" width="100"/> -->
+
+        <texture name="texgeom" type="cube" builtin="flat" mark="cross" width="127" height="1278"
+            rgb1="0.8 0.8 0.8" rgb2="0.8 0.8 0.8" markrgb="1 1 1" random="0.0"/>
+        <!-- <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+            width="512" height="512"/> -->
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".4 .6 .8" rgb2=".1 0.15 0.2"
+            width="512" height="512"/>
+        <material name='MatPlane' reflectance='0.3' texture="texplane" texrepeat="1 1" texuniform="true"/>
+        <material name='geom' texture="texgeom" texuniform="true"/>
+
+        <mesh name="viz_finger" file="franka/finger.stl"/>
+        <mesh name="viz_hand"   file="franka/hand.stl"/>
+        <mesh name="viz_link0"  file="franka/link0.stl"/>
+        <mesh name="viz_link1"  file="franka/link1.stl"/>
+        <mesh name="viz_link2"  file="franka/link2.stl"/>
+        <mesh name="viz_link3"  file="franka/link3.stl"/>
+        <mesh name="viz_link4"  file="franka/link4.stl"/>
+        <mesh name="viz_link5"  file="franka/link5.stl"/>
+        <mesh name="viz_link6"  file="franka/link6.stl"/>
+        <mesh name="viz_link7"  file="franka/link7.stl"/>
+    </asset>
+
+    <equality>
+        <!-- Links default hand grippers together -->
+        <joint name='finger2' joint1='finger1' joint2='finger2' polycoef="0 -1 0 0 0" />
+    </equality>
+
+    <actuator>
+
+        <!-- <motor name='joint1' gear='127' joint='joint1' />
+        <motor name='joint2' gear='127' joint='joint2' />
+        <motor name='joint3' gear='127' joint='joint3' />
+        <motor name='joint4' gear='127' joint='joint4' />
+        <motor name='joint5' gear='67' joint='joint5' />
+        <motor name='joint6' gear='12' joint='joint6' />
+        <motor name='joint7' gear='12' joint='joint7' />
+        <motor name='finger' gear='102' joint='finger1' /> -->
+
+        <velocity name='joint1' ctrlrange='-2 2' kv='120'  joint='joint1' />
+        <velocity name='joint2' ctrlrange='-2 2' kv='120'  joint='joint2' />
+        <velocity name='joint3' ctrlrange='-2 2' kv='120'  joint='joint3' />
+        <velocity name='joint4' ctrlrange='-2 2' kv='120'  joint='joint4' />
+        <velocity name='joint5' ctrlrange='-2 2' kv='100'  joint='joint5' />
+        <velocity name='joint6' ctrlrange='-2 2' kv='100'  joint='joint6' />
+        <velocity name='joint7' ctrlrange='-2 2' kv='100'  joint='joint7' />
+        <velocity name='finger' ctrlrange='-2 2' kv='100'  joint='finger2' />
+
+        <!-- <position name='joint1' ctrlrange='-2.5 2.5' kp='120'  joint='joint1' />
+        <position name='joint2' ctrlrange='-1.7 1.7' kp='120'  joint='joint2' />
+        <position name='joint3' ctrlrange='-2.5 2.5' kp='120'  joint='joint3' />
+        <position name='joint4' ctrlrange='-3.0 0.01' kp='120'  joint='joint4' />
+        <position name='joint5' ctrlrange='-2.5 2.5' kp='60'  joint='joint5' />
+        <position name='joint6' ctrlrange=' -0.01 3.5' kp='60'  joint='joint6' />
+        <position name='joint7' ctrlrange='-2.5 2.5' kp='60'  joint='joint7' />
+        <position name='finger' ctrlrange='-0.1 0.1' kp='60'  joint='finger2' /> -->
+
+
+    </actuator>
+
+</mujocoinclude>

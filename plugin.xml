@@ -7,4 +7,11 @@
         to demonstrate correct usage
     </description>
     </class>
+    <class  name="franka_interface/CartesianPoseInterface"
+            type="franka_interface::CartesianPoseInterface"
+            base_class_type="controller_interface::ControllerBase">
+    <description>
+        Cartesion pose interface
+    </description>
+    </class>
 </library>
