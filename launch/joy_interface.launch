@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<launch>
+
+    <node name="joy"
+            pkg="joy"
+            type="joy_node"
+        />
+
+    <node name="joy_interface"
+            pkg="franka_interface"
+            type="joy_interface.py"/>
+
+</launch>
