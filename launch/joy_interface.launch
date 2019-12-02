@@ -8,6 +8,7 @@
 
     <node name="joy_interface"
             pkg="franka_interface"
-            type="joy_interface.py"/>
+            type="joy_interface.py"
+            output="screen"/>
 
 </launch>

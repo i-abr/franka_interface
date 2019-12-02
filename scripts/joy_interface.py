@@ -4,12 +4,18 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import Joy
+import tf
+import pickle as pkl
 
 import actionlib
-
 from franka_gripper.msg import GraspAction, GraspGoal, GraspEpsilon
-
 import time
+
+from franka_interface.msg import ExpertDemo
+
+import os
+
+from copy import deepcopy
 
 class JoyListener(object):
 
@@ -18,8 +24,10 @@ class JoyListener(object):
         self.delta_x = 0.
         self.delta_y = 0.
         self.delta_z = 0.
+        self.grasp   = False
 
-        self.grasp   = 1
+        self.record  = False
+        self.save_bag = False
     def joy_callback(self, msg):
         self.delta_x = msg.axes[1]
         self.delta_y = msg.axes[0]
@@ -27,9 +35,24 @@ class JoyListener(object):
 
         self.grasp   = int(msg.buttons[5])
 
+        if int(msg.buttons[0]) == 1:
+            if not self.record:
+                print('recording')
+            if self.record:
+                self.save_bag = True
+                print('stopped recording')
+            self.record = not self.record
+
+
 if __name__ == '__main__':
 
+    file_dir = os.path.dirname(os.path.abspath(__file__)) + '/data/expert_demo/demo.pkl'
+
+    logger = {'inputs': [], 'outputs' : []}
+
     rospy.init_node('joy_interface')
+
+    tf_listener = tf.TransformListener()
 
     joy_listener = JoyListener()
     pub = rospy.Publisher('/pose_cmd', Pose, queue_size=1)
@@ -46,19 +69,28 @@ if __name__ == '__main__':
     grasp_goal.speed   = 0.1
     grasp_goal.force   = 0.001
 
-
     hz      = 10.0
     dt      = 1.0/hz
     rate    = rospy.Rate(hz)
 
     pose_cmd = Pose()
 
+    expert_demo = ExpertDemo()
+
     open_grasp = True
+
+    frames = 0
 
     while not rospy.is_shutdown():
 
-        pose_cmd.position.x = joy_listener.delta_x * 0.3
+        (trans,rot) = tf_listener.lookupTransform('/panda_EE', '/panda_link0', rospy.Time(0))
+        (ee_block_trans, rot) = tf_listener.lookupTransform('/EE', '/block', rospy.Time(0))
         pose_cmd.position.y = joy_listener.delta_y * 0.3
+        if joy_listener.delta_x < 0:
+            pose_cmd.position.x = 0.
+        else:
+            pose_cmd.position.x = joy_listener.delta_x * 0.24
+
         if joy_listener.delta_z > 0.:
             pose_cmd.position.z = 0.
         else:
@@ -76,7 +108,12 @@ if __name__ == '__main__':
             # client.wait_for_result()
             open_grasp = True
 
+        frames += 1
 
+        if joy_listener.record:
+            logger['inputs'].append(trans + ee_block_trans)
+            logger['outputs'].append([pose_cmd.position.x, pose_cmd.position.y, pose_cmd.position.z, joy_listener.grasp])
+            pkl.dump(logger, open(file_dir, 'wb'))
 
         pub.publish(pose_cmd)
         rate.sleep()
