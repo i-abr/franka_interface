@@ -39,12 +39,12 @@ namespace franka_interface {
         bool                read_message = false;
         float               decay_rate   = 0.99;
 
-        std::array<double, 16> raw_pose_cmd {};           //   = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 16> filtered_raw_pose_cmd {};//     = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 16> filtered_target_cmd {};//       = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 16> raw_pose_cmd {};
+        std::array<double, 16> filtered_raw_pose_cmd {};
+        std::array<double, 16> filtered_target_cmd {};
 
-        float alpha1   = 0.99;
-        float alpha2   = 0.999;
+        float alpha1   = 0.999;
+        float alpha2   = 0.99;
 
 
     public:
@@ -101,21 +101,8 @@ namespace franka_interface {
 
         void starting(const ros::Time&) {
             current_pose_ = cartesian_pose_handle_->getRobotState().O_T_EE_d;
-            filtered_target_cmd = current_pose_;
             filtered_raw_pose_cmd = current_pose_;
             raw_pose_cmd = current_pose_;
-            //
-            // filtered_target_cmd[0] = current_pose_[12];
-            // filtered_target_cmd[1] = current_pose_[13];
-            // filtered_target_cmd[2] = current_pose_[14];
-            //
-            // filtered_raw_pose_cmd[0] = current_pose_[12];
-            // filtered_raw_pose_cmd[1] = current_pose_[13];
-            // filtered_raw_pose_cmd[2] = current_pose_[14];
-            //
-            // raw_pose_cmd[0] = current_pose_[12];
-            // raw_pose_cmd[1] = current_pose_[13];
-            // raw_pose_cmd[2] = current_pose_[14];
 
             elapsed_time_ = ros::Duration(0.0);
         }
@@ -150,9 +137,7 @@ namespace franka_interface {
         }
 
         void cmd_callback(const std_msgs::Float32MultiArray::ConstPtr& msgs) {
-            // raw_pose_cmd[0] = msgs->position.x;
-            // raw_pose_cmd[1] = msgs->position.y;
-            // raw_pose_cmd[2] = msgs->position.z;
+
             for (int i = 0; i<16 ; i++) {
                 raw_pose_cmd[i] = msgs->data[i];
             }
