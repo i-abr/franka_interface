@@ -33,18 +33,19 @@ namespace franka_interface {
         franka_hw::FrankaPoseCartesianInterface*                cartesian_pose_interface_;
         std::unique_ptr<franka_hw::FrankaCartesianPoseHandle>   cartesian_pose_handle_;
         ros::Duration           elapsed_time_;
-        std::array<double, 16>  initial_pose_{};
+        std::array<double, 16>  current_pose_{};
 
         ros::Subscriber     pose_cmd_sub;
         bool                read_message = false;
         float               decay_rate   = 0.99;
 
-        std::array<double, 6> pose_cmd        = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 6> filtered_cmd    = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 6> delta_cmd       = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 6> raw_pose_cmd              = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 6> filtered_raw_pose_cmd     = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 6> filtered_target_cmd       = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-        float alpha   = 0.999;
-        float k_gain  = 0.001;
+        float alpha1   = 0.999;
+        float alpha2   = 0.99;
+
 
     public:
         bool init(hardware_interface::RobotHW* robot_hardware, ros::NodeHandle& node_handle)
@@ -80,15 +81,15 @@ namespace franka_interface {
             try {
                 auto state_handle = state_interface->getHandle(arm_id + "_robot");
 
-                std::array<double, 7> q_start{{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
-                for (size_t i = 0; i < q_start.size(); i++) {
-                    if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
-                        ROS_ERROR_STREAM(
-                          "CartesianPoseExampleController: Robot is not in the expected starting position for "
-                          "running this example. Move robot to init pose first.");
-                        return false;
-                    }
-                }
+                // std::array<double, 7> q_start{{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
+                // for (size_t i = 0; i < q_start.size(); i++) {
+                //     if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
+                //         ROS_ERROR_STREAM(
+                //           "CartesianPoseExampleController: Robot is not in the expected starting position for "
+                //           "running this example. Move robot to init pose first.");
+                //         return false;
+                //     }
+                // }
             } catch (const hardware_interface::HardwareInterfaceException& e) {
                 ROS_ERROR_STREAM(
                     "CartesianPoseExampleController: Exception getting state handle: " << e.what());
@@ -99,15 +100,35 @@ namespace franka_interface {
         }
 
         void starting(const ros::Time&) {
-            initial_pose_ = cartesian_pose_handle_->getRobotState().O_T_EE_d;
+            current_pose_ = cartesian_pose_handle_->getRobotState().O_T_EE_d;
+            filtered_target_cmd[0] = current_pose_[12];
+            filtered_target_cmd[1] = current_pose_[13];
+            filtered_target_cmd[2] = current_pose_[14];
+
+            filtered_raw_pose_cmd[0] = current_pose_[12];
+            filtered_raw_pose_cmd[1] = current_pose_[13];
+            filtered_raw_pose_cmd[2] = current_pose_[14];
+
+            raw_pose_cmd[0] = current_pose_[12];
+            raw_pose_cmd[1] = current_pose_[13];
+            raw_pose_cmd[2] = current_pose_[14];
+
             elapsed_time_ = ros::Duration(0.0);
         }
 
         void update(const ros::Time&, const ros::Duration& period) {
 
+            // update the current pose
+            std::array<double, 16>  current_pose_ = cartesian_pose_handle_->getRobotState().O_T_EE_d;
+
             if (read_message == true) {
                 // resetting the duration if there was a message
                 elapsed_time_ = ros::Duration(0.);
+
+                // if (elapsed_time_.toSec() < 0.2) { // not sure if I want to look at 0.1 s instead....
+                    // update the target filter if the elapsed time is ok, otherwise
+                    // just stay where it was commanded before
+
                 read_message = false; // reset the message
             }
             else {
@@ -115,36 +136,29 @@ namespace franka_interface {
                 elapsed_time_ += period;
             }
 
-            std::array<double, 16> new_pose = cartesian_pose_handle_->getRobotState().O_T_EE_d;
+            filtered_raw_pose_cmd[0] = alpha1 * filtered_raw_pose_cmd[0] + (1.0-alpha1) * raw_pose_cmd[0];
+            filtered_raw_pose_cmd[1] = alpha1 * filtered_raw_pose_cmd[1] + (1.0-alpha1) * raw_pose_cmd[1];
+            filtered_raw_pose_cmd[2] = alpha1 * filtered_raw_pose_cmd[2] + (1.0-alpha1) * raw_pose_cmd[2];
 
-            filtered_cmd[0] = alpha * filtered_cmd[0] + (1.0-alpha) * pose_cmd[0];
-            filtered_cmd[1] = alpha * filtered_cmd[1] + (1.0-alpha) * pose_cmd[1];
-            filtered_cmd[2] = alpha * filtered_cmd[2] + (1.0-alpha) * pose_cmd[2];
 
-            if (elapsed_time_.toSec() > 0.2) { // not sure if I want to look at 0.1 s instead....
-                // send robot the same pose, should not keep moving
-                delta_cmd[0] *= decay_rate;
-                delta_cmd[1] *= decay_rate;
-                delta_cmd[2] *= decay_rate;
-            }
-            else {
-                delta_cmd[0] = (initial_pose_[12] + filtered_cmd[0] - new_pose[12]) * k_gain;
-                delta_cmd[1] = (initial_pose_[13] + filtered_cmd[1] - new_pose[13]) * k_gain;
-                delta_cmd[2] = (initial_pose_[14] + filtered_cmd[2] - new_pose[14]) * k_gain;
-            }
+            // filtered_target_cmd[0] = alpha * filtered_target_cmd[0] + (1.0-alpha) * filtered_raw_pose_cmd[0];
+            // filtered_target_cmd[1] = alpha * filtered_target_cmd[1] + (1.0-alpha) * filtered_raw_pose_cmd[1];
+            // filtered_target_cmd[2] = alpha * filtered_target_cmd[2] + (1.0-alpha) * filtered_raw_pose_cmd[2];
 
-            new_pose[12]    += delta_cmd[0];
-            new_pose[13]    += delta_cmd[1];
-            new_pose[14]    += delta_cmd[2];
+            // std::cout << current_pose_[12] << "\t" << __current_pose_[12] << std::endl;
 
-            cartesian_pose_handle_->setCommand(new_pose);
+            current_pose_[12] = alpha2 * current_pose_[12] + (1.0-alpha2) * filtered_raw_pose_cmd[0];//filtered_target_cmd[0];
+            current_pose_[13] = alpha2 * current_pose_[13] + (1.0-alpha2) * filtered_raw_pose_cmd[1];//filtered_target_cmd[1];
+            current_pose_[14] = alpha2 * current_pose_[14] + (1.0-alpha2) * filtered_raw_pose_cmd[2];//filtered_target_cmd[2];
+
+            cartesian_pose_handle_->setCommand(current_pose_);
 
         }
 
         void cmd_callback(const geometry_msgs::Pose::ConstPtr& msgs) {
-            pose_cmd[0] = msgs->position.x;
-            pose_cmd[1] = msgs->position.y;
-            pose_cmd[2] = msgs->position.z;
+            raw_pose_cmd[0] = msgs->position.x;
+            raw_pose_cmd[1] = msgs->position.y;
+            raw_pose_cmd[2] = msgs->position.z;
             read_message = true;
         }
 
