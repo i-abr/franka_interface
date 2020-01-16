@@ -19,7 +19,7 @@
 #include <ros/ros.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
-#include <geometry_msgs/Pose.h>
+#include <std_msgs/Float32MultiArray.h>
 
 namespace franka_interface {
 
@@ -39,12 +39,12 @@ namespace franka_interface {
         bool                read_message = false;
         float               decay_rate   = 0.99;
 
-        std::array<double, 6> raw_pose_cmd              = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 6> filtered_raw_pose_cmd     = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 6> filtered_target_cmd       = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 16> raw_pose_cmd {};           //   = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 16> filtered_raw_pose_cmd {};//     = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        std::array<double, 16> filtered_target_cmd {};//       = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
-        float alpha1   = 0.999;
-        float alpha2   = 0.99;
+        float alpha1   = 0.99;
+        float alpha2   = 0.999;
 
 
     public:
@@ -101,17 +101,21 @@ namespace franka_interface {
 
         void starting(const ros::Time&) {
             current_pose_ = cartesian_pose_handle_->getRobotState().O_T_EE_d;
-            filtered_target_cmd[0] = current_pose_[12];
-            filtered_target_cmd[1] = current_pose_[13];
-            filtered_target_cmd[2] = current_pose_[14];
-
-            filtered_raw_pose_cmd[0] = current_pose_[12];
-            filtered_raw_pose_cmd[1] = current_pose_[13];
-            filtered_raw_pose_cmd[2] = current_pose_[14];
-
-            raw_pose_cmd[0] = current_pose_[12];
-            raw_pose_cmd[1] = current_pose_[13];
-            raw_pose_cmd[2] = current_pose_[14];
+            filtered_target_cmd = current_pose_;
+            filtered_raw_pose_cmd = current_pose_;
+            raw_pose_cmd = current_pose_;
+            //
+            // filtered_target_cmd[0] = current_pose_[12];
+            // filtered_target_cmd[1] = current_pose_[13];
+            // filtered_target_cmd[2] = current_pose_[14];
+            //
+            // filtered_raw_pose_cmd[0] = current_pose_[12];
+            // filtered_raw_pose_cmd[1] = current_pose_[13];
+            // filtered_raw_pose_cmd[2] = current_pose_[14];
+            //
+            // raw_pose_cmd[0] = current_pose_[12];
+            // raw_pose_cmd[1] = current_pose_[13];
+            // raw_pose_cmd[2] = current_pose_[14];
 
             elapsed_time_ = ros::Duration(0.0);
         }
@@ -136,29 +140,22 @@ namespace franka_interface {
                 elapsed_time_ += period;
             }
 
-            filtered_raw_pose_cmd[0] = alpha1 * filtered_raw_pose_cmd[0] + (1.0-alpha1) * raw_pose_cmd[0];
-            filtered_raw_pose_cmd[1] = alpha1 * filtered_raw_pose_cmd[1] + (1.0-alpha1) * raw_pose_cmd[1];
-            filtered_raw_pose_cmd[2] = alpha1 * filtered_raw_pose_cmd[2] + (1.0-alpha1) * raw_pose_cmd[2];
-
-
-            // filtered_target_cmd[0] = alpha * filtered_target_cmd[0] + (1.0-alpha) * filtered_raw_pose_cmd[0];
-            // filtered_target_cmd[1] = alpha * filtered_target_cmd[1] + (1.0-alpha) * filtered_raw_pose_cmd[1];
-            // filtered_target_cmd[2] = alpha * filtered_target_cmd[2] + (1.0-alpha) * filtered_raw_pose_cmd[2];
-
-            // std::cout << current_pose_[12] << "\t" << __current_pose_[12] << std::endl;
-
-            current_pose_[12] = alpha2 * current_pose_[12] + (1.0-alpha2) * filtered_raw_pose_cmd[0];//filtered_target_cmd[0];
-            current_pose_[13] = alpha2 * current_pose_[13] + (1.0-alpha2) * filtered_raw_pose_cmd[1];//filtered_target_cmd[1];
-            current_pose_[14] = alpha2 * current_pose_[14] + (1.0-alpha2) * filtered_raw_pose_cmd[2];//filtered_target_cmd[2];
+            for (int i=0; i < 16; i++) {
+                filtered_raw_pose_cmd[i] = alpha1 * filtered_raw_pose_cmd[i] + (1.0-alpha1) * raw_pose_cmd[i];
+                current_pose_[i] = alpha2 * current_pose_[i] + (1.0-alpha2) * filtered_raw_pose_cmd[i];
+            }
 
             cartesian_pose_handle_->setCommand(current_pose_);
 
         }
 
-        void cmd_callback(const geometry_msgs::Pose::ConstPtr& msgs) {
-            raw_pose_cmd[0] = msgs->position.x;
-            raw_pose_cmd[1] = msgs->position.y;
-            raw_pose_cmd[2] = msgs->position.z;
+        void cmd_callback(const std_msgs::Float32MultiArray::ConstPtr& msgs) {
+            // raw_pose_cmd[0] = msgs->position.x;
+            // raw_pose_cmd[1] = msgs->position.y;
+            // raw_pose_cmd[2] = msgs->position.z;
+            for (int i = 0; i<16 ; i++) {
+                raw_pose_cmd[i] = msgs->data[i];
+            }
             read_message = true;
         }
 

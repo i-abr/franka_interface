@@ -5,13 +5,17 @@ import numpy as np
 import tf
 from tf import transformations as trans
 
-from geometry_msgs.msg import Pose
-
 from std_msgs.msg import Float32MultiArray
 
 import lcm
 from exlcm import env_state
 
+def_pose = np.array([
+    [1., 0., 0., .3],
+    [0.,-1., 0., 0.],
+    [0., 0.,-1., .4],
+    [0., 0., 0., 1.]
+])
 
 if __name__ == '__main__':
     rospy.init_node('test_cmd')
@@ -40,14 +44,16 @@ if __name__ == '__main__':
 
     print "obtained initiatial pose, testing movement now"
 
-    cmd.position.x = init_pose_[0,-1]
-    cmd.position.y = init_pose_[1,-1]
-    cmd.position.z = init_pose_[2,-1]
+    # cmd.data = init_pose_.flatten('F')
 
-    cmd.data = init_pose_.flatten('F')
+    # new_rot = trans.rotation_matrix(25.*np.pi/180., np.array([0., 0., 1.]))
+
+    # cmd.data = np.dot(def_pose, new_rot).flatten('F')
+    cmd.data = def_pose.flatten('F')
+
     time = 0.
     while not rospy.is_shutdown():
         time += dt
-        cmd.data[12] = init_pose_[0,-1] + 0.1 * np.sin(np.pi/2.0 * time)
+        # cmd.data[12] = init_pose_[0,-1] + 0.1 * np.sin(np.pi/2.0 * time)
         pub.publish(cmd)
         rate.sleep()
