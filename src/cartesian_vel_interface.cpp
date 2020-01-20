@@ -57,6 +57,10 @@ namespace franka_interface {
                 return false;
             }
 
+            if (!node_handle.getParam("alpha", alpha)) {
+                ROS_ERROR("cartesina vel interface could not parse filter parameter");
+            }
+
             velocity_cartesian_interface_ = robot_hardware->get<franka_hw::FrankaVelocityCartesianInterface>();
             if (velocity_cartesian_interface_ == nullptr) {
                 ROS_ERROR(

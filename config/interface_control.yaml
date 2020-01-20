@@ -16,3 +16,4 @@ cartesian_pose_interface:
 cartesian_vel_interface:
     type: franka_interface/CartesianVelInterface
     arm_id: panda
+    alpha: 0.995
