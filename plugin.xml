@@ -14,4 +14,11 @@
         Cartesion pose interface
     </description>
     </class>
+    <class  name="franka_interface/CartesianVelInterface"
+            type="franka_interface::CartesianVelInterface"
+            base_class_type="controller_interface::ControllerBase">
+    <description>
+        Cartesion velocity interface
+    </description>
+    </class>
 </library>

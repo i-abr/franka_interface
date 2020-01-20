@@ -12,3 +12,7 @@ velocity_interface:
 cartesian_pose_interface:
     type: franka_interface/CartesianPoseInterface
     arm_id: panda
+
+cartesian_vel_interface:
+    type: franka_interface/CartesianVelInterface
+    arm_id: panda

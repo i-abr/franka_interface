@@ -53,6 +53,7 @@ catkin_package(
 add_library(franka_interface
   src/velocity_interface.cpp
   src/cartesian_pose_interface.cpp
+  src/cartesian_vel_interface.cpp
 )
 
 add_dependencies(franka_interface
