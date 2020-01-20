@@ -42,7 +42,7 @@ namespace franka_interface {
         std::array<double, 6> raw_cmd = {{0., 0., 0., 0., 0., 0.}};
         std::array<double, 6> filtered_cmd = {{0., 0., 0., 0., 0., 0.}};
 
-        float alpha   = 0.99;
+        float alpha   = 0.995;
 
 
     public:

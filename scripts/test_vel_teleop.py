@@ -78,9 +78,9 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         time += dt
 
-        cmd.data[0] = 0.1 * joy_listener.delta_x
-        cmd.data[1] = 0.1 * joy_listener.delta_y
-        cmd.data[2] = 0.1 * joy_listener.delta_z
+        cmd.data[0] = 0.2 * joy_listener.delta_x
+        cmd.data[1] = 0.2 * joy_listener.delta_y
+        cmd.data[2] = 0.2 * joy_listener.delta_z
         cmd.data[3] = 0.4 * joy_listener.delta_rot_x
         cmd.data[4] = 0.4 * joy_listener.delta_rot_y
         cmd.data[5] = 0.4 * joy_listener.delta_rot_z
