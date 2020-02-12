@@ -125,10 +125,19 @@ namespace franka_interface {
                 // decay_rate
 
             }
-
-            for (int i=0; i < 6; i++) {
-                filtered_cmd[i] = alpha * filtered_cmd[i] + (1.0-alpha) * raw_cmd[i];
+            
+            if (elapsed_time_.toSec() < 0.2) {
+                for (int i=0; i < 6; i++) {
+                    filtered_cmd[i] = alpha * filtered_cmd[i] + (1.0-alpha) * raw_cmd[i];
+                }
             }
+            else {
+                for (int i=0; i < 6; i++) {
+                    filtered_cmd[i] = alpha * filtered_cmd[i] + (1.0-alpha) * 0.;
+                }
+
+            }
+
 
             velocity_cartesian_handle_->setCommand(filtered_cmd);
 

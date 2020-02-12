@@ -13,17 +13,17 @@ if __name__ == '__main__':
                             SetFullCollisionBehavior)
 
         response = update_collision_behavior(
-            [600.0 for _ in range(7)], # lower torque threshold acc
-            [600.0 for _ in range(7)], # upper torque threshold acc
+            [1000.0 for _ in range(7)], # lower torque threshold acc
+            [2000.0 for _ in range(7)], # upper torque threshold acc
             [600.0 for _ in range(7)], # lower torque threshold nominal
-            [600.0 for _ in range(7)], # upper torque threshold nominal
+            [900.0 for _ in range(7)], # upper torque threshold nominal
+            [1000.0 for _ in range(6)], # lower force thresholds acc
+            [2000.0 for _ in range(6)], # upper force thresholds acc
             [600.0 for _ in range(6)], # lower force thresholds acc
-            [600.0 for _ in range(6)], # upper force thresholds acc
-            [600.0 for _ in range(6)], # lower force thresholds acc
-            [600.0 for _ in range(6)], # upper force thresholds acc
+            [1000.0 for _ in range(6)], # upper force thresholds acc
         )
         if response.success == True:
-            print('Shit worked bro')
+            print('successfully updated collision behavior')
         else:
             print('This did not work for the following reasons: ')
             print(error)
