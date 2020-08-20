@@ -29,6 +29,7 @@ namespace franka_interface {
         ros::Duration       elapsed_time_;
         bool                read_message = false;
         float               decay_rate   = 0.8;
+        float               max_vel      = 0.2;
 
         // initialize to 0 so the robot doesn't do crazy things when starting
 
@@ -39,22 +40,7 @@ namespace franka_interface {
     public:
         bool init(hardware_interface::RobotHW* robot_hardware, ros::NodeHandle& node_handle) {
 
-            /*
-             * TODO: see if I actually need this to be in the velocity interface cpp file
-            ros::ServiceClient client = node_handle.serviceClient<
-                        franka_ros::SetForceTorqueCollision
-            >("/franka_control/set_full_collision_behavior");
 
-            franka_ros::SetForceTorqueCollision srv;
-            srv.request.lower_torque_thresholds_acceleration;
-            srv.request.upper_torque_thresholds_acceleration;
-            srv.request.lower_torque_thresholds_nominal;
-            srv.request.upper_torque_thresholds_nominal;
-            srv.request.lower_force_thresholds_acceleration;
-            srv.request.upper_force_thresholds_acceleration;
-            srv.request.lower_force_thresholds_nominal;
-            srv.request.upper_force_thresholds_nominal;
-            */
 
             vel_cmd_sub = node_handle.subscribe("/jnt_cmd", 1, &VelocityInterface::cmd_callback, this);
             // Get the velocity HW interface
@@ -159,8 +145,16 @@ namespace franka_interface {
         void cmd_callback(const sensor_msgs::JointState::ConstPtr& msgs) {
             // pull in the current command
             // TODO: update this once debugging is complete
+            float vel;
             for (size_t i=0; i<7; i++) {
-                vel_cmd[i] = msgs->velocity[i];
+                vel = msgs->velocity[i];
+                if (msgs->velocity[i] < -max_vel) {
+                    vel = -max_vel;
+                }
+                if (msgs->velocity[i] > max_vel) {
+                    vel = max_vel;
+                }
+                vel_cmd[i] = vel;
             }
             read_message = true;
         }
